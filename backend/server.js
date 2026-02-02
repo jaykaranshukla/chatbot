@@ -8,7 +8,13 @@ dotenv.config();
 const app = express();
 const port = 3000;
 
-app.use(cors());
+// ✅ UPDATE CORS
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "*",
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Groq setup
@@ -27,7 +33,7 @@ app.get("/messages", (req, res) => {
 
 app.post("/chat", async (req, res) => {
   try {
-    const { message,history } = req.body;
+    const { message, history } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
