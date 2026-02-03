@@ -3,6 +3,9 @@ import { Footer } from "./Components/Footer";
 import { Navbar } from "./Components/Navbar";
 import { Body } from "./Components/Body";
 
+const API_URL = "https://chatbot-backend-uey2.onrender.com";
+
+
 
 function App() {
   // Store all messages here (the brain!)
@@ -10,7 +13,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   // Fetch initial message when app starts
   useEffect(() => {
-    fetch("http://localhost:3000/messages")
+    fetch(`${API_URL}/messages`)
       .then((res) => res.json())
       .then((data) => setMessages(data))
       .catch((err) => console.error("Fetch error:", err));
@@ -30,7 +33,7 @@ function App() {
 
     try {
       // 3. Send to backend
-      const response = await fetch("http://localhost:3000/chat", {
+      const response = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
