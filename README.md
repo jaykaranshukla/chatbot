@@ -1,4 +1,4 @@
-# 🤖 Chatbot
+# ✨ Nexus AI
 
 A full-stack AI chatbot application with a **React 19 + Vite** frontend and an **Express 5** backend — all in one monorepo. Styled with **Tailwind CSS v4** and deployed live on Vercel.
 

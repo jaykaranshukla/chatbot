@@ -5,13 +5,10 @@ import { Body } from "./Components/Body";
 
 const API_URL = "https://chatbot-backend-uey2.onrender.com";
 
-
-
 function App() {
-  // Store all messages here (the brain!)
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  // Fetch initial message when app starts
+
   useEffect(() => {
     fetch(`${API_URL}/messages`)
       .then((res) => res.json())
@@ -19,69 +16,83 @@ function App() {
       .catch((err) => console.error("Fetch error:", err));
   }, []);
 
-  // When user sends a message from Footer
   const handleSendMessage = async (userMessage) => {
-    // 1. Add user message to chat immediately
-    const userMsg = {
-      role: "user",
-      text: userMessage,
-    };
-    setMessages((prev) => [...prev, userMsg]);
+    const userMsg = { role: "user", text: userMessage };
 
-    // 2. Show loading (AI is thinking)
+    // 1. Add user message
+    setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
+    // 2. Add empty AI message — we'll fill it word by word
+    setMessages((prev) => [...prev, { role: "ai", text: "" }]);
+
     try {
-      // 3. Send to backend
-      const response = await fetch(`${API_URL}/chat`, {
+      const response = await fetch(`${API_URL}/chat/stream`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userMessage, history: messages }),
       });
 
-      const data = await response.json();
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
 
-      // 4. Add AI response to chat
-      if (response.ok) {
-        setMessages((prev) => [...prev, data]);
-      } else {
-        // If error, show error message
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "ai",
-            text: "Sorry, something went wrong. Please try again.",
-          },
-        ]);
+      // 3. Read stream chunk by chunk
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value);
+        const lines = text.split("\n");
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+
+          const data = line.slice(6);
+          if (data === "[DONE]") break;
+
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.content) {
+              // 4. Append each word to the last message
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                  role: "ai",
+                  text: updated[updated.length - 1].text + parsed.content,
+                };
+                return updated;
+              });
+            }
+          } catch (e) {
+            // skip bad chunks
+          }
+        }
       }
     } catch (error) {
-      console.error("Chat error:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
+      console.error("Stream error:", error);
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
           role: "ai",
-          text: "Sorry, I couldn't connect to the server.",
-        },
-      ]);
+          text: "Sorry, something went wrong.",
+        };
+        return updated;
+      });
     } finally {
-      // 5. Stop loading
       setIsLoading(false);
     }
   };
+
   return (
-    <>
-      <div className="min-h-screen flex  flex-col">
-        <div className="sticky top-0">
-          <Navbar />
-        </div>
-        <Body messages={messages} />
-        <div className="sticky bottom-0">
-          <Footer onSendMessage={handleSendMessage} isLoading={isLoading} />
-        </div>
+    <div className="min-h-screen flex flex-col">
+      <div className="sticky top-0">
+        <Navbar />
       </div>
-    </>
+      <Body messages={messages} isLoading={isLoading} />
+      <div className="sticky bottom-0">
+        <Footer onSendMessage={handleSendMessage} isLoading={isLoading} />
+      </div>
+    </div>
   );
 }
 

@@ -8,7 +8,7 @@ export const Navbar = () => {
           <span className="material-symbols-outlined">smart_toy</span>
         </div>
         <div className="flex flex-col">
-            <div className="text-white text-2xl font-bold py-1">AI Assistant</div>
+            <div className="text-white text-2xl font-bold py-1">Nexus AI</div>
             <div className="text-white text-sm py-1">Online</div>
         </div>
       </div>
